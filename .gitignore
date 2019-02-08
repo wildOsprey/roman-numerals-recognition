@@ -1,0 +1,4 @@
+*.npy
+logs/
+sessions/
+__pycache__/

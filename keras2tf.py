@@ -11,10 +11,11 @@ def Reshape(shape, name=None):
 def Flatten(name=None):
     def _Flatten(x):
         return tf.layers.flatten(x, name=name)
+    return _Flatten
 
 def Dense(units, **args):
     def _Dense(x):
-        tf.layers.dense(x, units=units, **args)
+        return tf.layers.dense(x, units=units, **args)
     return _Dense
 
 def Conv2D(filters, kernel_size, **args):
