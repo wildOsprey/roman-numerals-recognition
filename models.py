@@ -1,4 +1,5 @@
 from keras2tf import *
+import tensorflow as tf
 
 class ModelManager:
     
@@ -9,21 +10,20 @@ class ModelManager:
 
 
     def get_5conv_model(self):
-        input_shape = (224,224,3)
+        input_shape = (28,28,1)
 
         input_ph = Input(input_shape)
-        x = self._conv(input_ph, 32,(5,5)) # -> 112, 112, 32
-        x = self._conv(x, 64, (3,3)) # -> 56, 56, 64
-        x = self._conv(x, 128, (3,3)) # -> 28, 28, 128
-        x = self._conv(x, 256, (3,3)) # -> 14, 14, 256
-        x = self._conv(x, 512, (3,3)) # -> 7, 7, 512
-
-        return model, input_shape, output_shape, preprocess_input
+        x = self._conv(input_ph, 16,(3,3))
+        x = self._conv(x, 32, (3,3)) 
+        x = Flatten()(x)
+        x = Dense(32, activation=tf.nn.relu)(x)
+        output = Dense(10)(x)
+        return input_ph, output
 
 
 
     def _conv(self, x, filters, kernel_size):
-        x = Conv2D(filters, kernel_size, padding='same', activation='relu')(x)
+        x = Conv2D(filters, kernel_size, padding='same', activation=tf.nn.relu)(x)
         x = MaxPool2D((2,2),(2,2),padding='same')(x)
-        x = BatchNormalization()(x)
+        #x = BatchNormalization()(x)
         return x

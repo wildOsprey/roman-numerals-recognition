@@ -5,6 +5,7 @@ from random import sample
 import cv2
 import numpy as np
 import tensorflow as tf
+from keras.utils import to_categorical
 
 from data_augmentation import DataAugmentation
 
@@ -14,10 +15,10 @@ FLAGS = flags.FLAGS
 
 class BatchGenerator:
 
-    def __init__(self, path2data=FLAGS.dataset_data):
-        path2data = os.path.abspath(path2data)
-        self.data = np.array(os.path.join(path2data, 'data.npy'))
-        self.labels = np.array(os.path.join(path2data, 'labels.npy'))
+    def __init__(self):
+        path2data = os.path.abspath(FLAGS.dataset_data)
+        self.data = np.load(os.path.join(path2data, 'data.npy'))
+        self.labels = np.load(os.path.join(path2data, 'labels.npy'))
         split = int(len(self.data)*0.7)
         test_split = int(len(self.data)*0.1)
         self.val_data = self.data[split:split+test_split]
@@ -52,7 +53,9 @@ class BatchGenerator:
     def _get_batch(self, index, mode='train'):      
         batch_x, batch_y = self.d[mode]
         batch_x = batch_x[index *FLAGS.batch_size: (index+1)*FLAGS.batch_size]
+        batch_x = batch_x.reshape(-1,28,28,1)
         batch_y = batch_y[index *FLAGS.batch_size: (index+1)*FLAGS.batch_size]
+        batch_y = to_categorical(batch_y, 10)
         return batch_x, batch_y
 
     def next_batch(self):
@@ -67,8 +70,8 @@ class BatchGenerator:
                 ret = self._get_batch(self.index)
 
             self.index += 1
-            yield ret
-            #return ret
+            #yield ret
+            return ret
 
     def next_val_batch(self):
         while 1:
@@ -82,8 +85,8 @@ class BatchGenerator:
                 ret = self._get_batch(self.val_index)
 
             self.val_index += 1
-            yield ret
-            #return ret
+            #yield ret
+            return ret
 
     def next_test_batch(self):
         while 1:
@@ -97,8 +100,8 @@ class BatchGenerator:
                 ret = self._get_batch(self.test_index)
 
             self.test_index += 1
-            yield ret
-            #return ret
+            #yield ret
+            return ret
 
     def get_batch(self, mode):
         if mode == 'train':

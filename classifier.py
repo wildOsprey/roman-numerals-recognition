@@ -1,3 +1,4 @@
+import os
 import keras
 import numpy as np
 import tensorflow as tf
@@ -6,7 +7,7 @@ from keras.layers import (BatchNormalization, Conv2D, Flatten, Input,
                           MaxPool2D, Reshape)
 from keras.models import Sequential
 
-from batch_generator import Generator
+from batch_generator import BatchGenerator
 from models import ModelManager
 
 flags = tf.app.flags
@@ -17,10 +18,10 @@ class Classifier:
 
     def __init__(self):
         self._build()
-        self.generator = Generator()
+        self.generator = BatchGenerator()
 
     def _build(self):
-        self.label_placeholder = tf.placeholder(dtype=tf.int32, shape=[None, 8])
+        self.label_placeholder = tf.placeholder(dtype=tf.int32, shape=[None, 10])
         self.dropout_rate = tf.placeholder_with_default(
             1., shape=None, name='dropout_rate_ph')
         self.learning_rate = tf.placeholder_with_default(
@@ -31,8 +32,8 @@ class Classifier:
             dtype=tf.float32, shape=None, name='avr_accuracy')
         self.model_manager = ModelManager(self.dropout_rate)
 
-        self.input_placeholder, output_kernel = self.model_manager.models[FLAGS.model]
-        self.output = tf.nn.softmax(output_kernel)
+        self.input_placeholder, self.output = self.model_manager.models[FLAGS.model]()
+        #self.output = tf.nn.softmax(output_kernel)
 
         self.global_step = tf.Variable(0, trainable=False)
 
@@ -56,9 +57,9 @@ class Classifier:
             self.scalars_irl = tf.summary.merge([scalar_loss, scalar_accuracy])
 
             scalar_avr_loss = tf.summary.scalar(
-                'scalar_avr_loss', self.avr_oss)           
+                'scalar_avr_loss', self.avr_loss)           
             scalar_avr_accuracy = tf.summary.scalar(
-                'scalar_avr_loss', self.avr_accuracy)
+                'scalar_avr_accuracy', self.avr_accuracy)
 
             self.scalar_avr = tf.summary.merge([scalar_avr_loss, scalar_avr_accuracy])
 
@@ -78,32 +79,21 @@ class Classifier:
                     val_avr_accuracy = []
                     val_avr_loss = []
 
-                    for i in range(FLAGS.iters):
+                    for i in range(self.generator.get_iters_count()):
                         _, accuracy, loss, summary_str = self._train_on_batch(
                             sess, [self.train_step,                                   
                                    self.accuracy,                       
                                    self.loss,
                                    self.scalars_irl], FLAGS.dropout, lr)
                         train_writer.add_summary(
-                            summary_str, i + epoch * FLAGS.iters)
+                            summary_str, i + epoch * self.generator.get_iters_count())
                        
-                        print('acc:', accuracy, 'loss:', loss)
+                        #print('acc:', accuracy, 'loss:', loss)
                         avr_accuracy.append(accuracy)
                         avr_loss.append(loss)
-
-                        if i % FLAGS.val_rate == 0:
-                            accuracy, loss, summary_str = self._train_on_batch(
-                                sess, [self.accuracy,                       
-                                       self.loss,
-                                       self.scalars_irl], 1, lr, 'valid')
-                            valid_writer.add_summary(
-                                summary_str, i + epoch * FLAGS.iters)
-                            
-                            val_avr_accuracy.append(accuracy)
-                            val_avr_loss.append(loss)
-
                     train_steps_count = len(avr_loss)
-                    val_steps_count = len(val_avr_loss)
+                    
+                    
 
                     train_avr = sess.run([self.scalar_avr], feed_dict={self.avr_accuracy:sum(avr_accuracy)/train_steps_count,
                                                                        self.avr_loss:sum(avr_loss)/train_steps_count,
@@ -111,6 +101,19 @@ class Classifier:
                     avr_train_writer.add_summary(
                         train_avr, epoch)
 
+
+
+                    for i in range(self.generator.get_val_iters_count()):
+                        accuracy, loss, summary_str = self._train_on_batch(
+                            sess, [self.accuracy,                       
+                                    self.loss,
+                                    self.scalars_irl], 1, lr, 'valid')
+                        print('validation acc:', accuracy, 'loss:', loss)
+                        valid_writer.add_summary(
+                            summary_str, i + epoch * self.generator.get_val_iters_count())                       
+                        val_avr_accuracy.append(accuracy)
+                        val_avr_loss.append(loss)
+                    val_steps_count = len(val_avr_loss)
                     val_avr = sess.run([self.scalar_avr], feed_dict={self.avr_accuracy: sum(val_avr_accuracy)/val_steps_count,
                                                                      self.avr_loss: sum(val_avr_loss)/val_steps_count,
                                                                      })[0]
@@ -148,6 +151,9 @@ class Classifier:
   
 
     def _save(self, sess, epoch):
+        path = "sessions/{}_{}_{}/graph.ckpt".format(self.__class__.__name__,  FLAGS.batch_size, FLAGS.info)
+        if not os.path.exists(path):
+            os.makedirs(path)
         save_path = self.saver.save(
-        sess, "sessions/{}_{}_{}/graph.ckpt".format(self.__class__.__name__,  FLAGS.batch_size, FLAGS.info), epoch)
+        sess, path, epoch)
         print("Model saved in path: %s" % save_path)
