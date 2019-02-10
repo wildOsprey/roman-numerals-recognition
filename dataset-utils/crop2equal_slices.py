@@ -2,8 +2,8 @@ from PIL import Image
 import os
 
 def crop(image, rows,columns, subimgheight,subimgwidth):
-    for i in range(rows):
-        for j in range(columns):
+     for j in range(columns):
+        for i in range(rows):       
             box = (j*subimgwidth, i*subimgheight, (j+1)*subimgwidth, (i+1)*subimgheight)
             yield image.crop(box)
 
