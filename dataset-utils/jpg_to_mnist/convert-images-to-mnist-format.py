@@ -2,7 +2,7 @@ import os
 from PIL import Image
 from array import *
 from random import shuffle
-
+from .preprocessing import get_img
 # Load from and save to
 Names = [['./training-images','train'], ['./test-images','test']]
 
@@ -24,9 +24,7 @@ for name in Names:
 
 		label = int(filename.split('/')[2])
 
-		Im = Image.open(filename)
-
-		pixel = Im.load()
+		pixel = get_img(filename)
 
 		width, height = Im.size
 
