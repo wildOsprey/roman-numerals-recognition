@@ -1,4 +1,8 @@
 {
+<<<<<<< HEAD
+    "python.pythonPath": "C:\\Users\\FX-1\\Anaconda3\\python.exe"
+=======
     "python.pythonPath": "C:\\Anaconda\\envs\\nn\\python.exe",
     "python.linting.pylintEnabled": true
+>>>>>>> master
 }

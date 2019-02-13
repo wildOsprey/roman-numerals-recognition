@@ -1,4 +1,10 @@
+<<<<<<< HEAD
+*.jpg
+*.png
+*.gif
+=======
 *.npy
 logs/
 sessions/
 __pycache__/
+>>>>>>> master
